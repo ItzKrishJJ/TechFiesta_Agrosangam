@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forecasted Salinity Data</title>
+</head>
+<body>
+    <h1>Forecasted Salinity Data</h1>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Salinity</th>
+            </tr>
+        </thead>
+        <tbody id="forecast-data">
+            <!-- Data rows will be inserted here dynamically -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch data from the Flask API
+        fetch('/forecast')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById("forecast-data");
+
+                // Loop through the data and create table rows
+                for (const [timestamp, salinity] of Object.entries(data)) {
+                    const row = document.createElement("tr");
+                    const timestampCell = document.createElement("td");
+                    const salinityCell = document.createElement("td");
+
+                    timestampCell.textContent = timestamp;
+                    salinityCell.textContent = salinity;
+
+                    row.appendChild(timestampCell);
+                    row.appendChild(salinityCell);
+                    tableBody.appendChild(row);
+                }
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    </script>
+</body>
+</html>

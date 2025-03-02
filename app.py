@@ -1,4 +1,4 @@
-import os
+
 from flask import Flask, jsonify, render_template, redirect, session, url_for, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -8,7 +8,6 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationE
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from fpdf import FPDF
 from flask import send_from_directory
-from datetime import datetime
 from flask import Flask, request, jsonify, render_template
 import sqlite3
 import numpy as np
@@ -22,11 +21,16 @@ import os
 import groq
 from geopy.distance import geodesic
 import firebase_admin
-from firebase_admin import credentials, db
+from firebase_admin import credentials
 import bcrypt
 from geopy.distance import geodesic  # ✅ Calculate distances between farmers
 from flask_login import LoginManager
 from firebase_admin import db as firebase_db  
+import pandas as pd
+import numpy as np
+from statsmodels.tsa.arima.model import ARIMA
+from datetime import datetime, timedelta
+
 
 # Initialize app
 app = Flask(__name__)
@@ -144,7 +148,16 @@ class Order(db.Model):
     agreement_pdf = db.Column(db.String(255), nullable=True)
     status = db.Column(db.String(20), default='Pending')
     feedback = db.Column(db.Text, nullable=True)  # New feedback column
+    
+        # ✅ New Column: Store the time when the order is accepted
+    accepted_at = db.Column(db.DateTime, nullable=True)
 
+    def accept_order(self):
+        """Function to update order status & set accepted_at time."""
+        self.status = "Accepted"
+        self.accepted_at = datetime.utcnow()
+        db.session.commit()
+ 
 
     def __repr__(self):
         return f"<Order {self.id}>"
@@ -777,12 +790,39 @@ def reject_order(order_id):
 @app.route('/order_history')
 @login_required
 def order_history():
+    """Fetch order history for Farmers & Consumers with current time."""
+    
     if current_user.role == "Farmer":
         orders = Order.query.filter_by(farmer_id=current_user.id).all()
     else:
         orders = Order.query.filter_by(consumer_id=current_user.id).all()
 
-    return render_template('order_history.html', orders=orders)
+    current_time = datetime.utcnow()  # Get the current UTC time
+
+    return render_template('order_history.html', orders=orders, current_time=current_time)
+
+@app.route('/cancel_order/<int:order_id>', methods=['POST'])
+@login_required
+def cancel_order(order_id):
+    order = Order.query.get(order_id)
+
+    if not order:
+        return jsonify({"success": False, "message": "Order not found"}), 404
+    
+    # Allow only consumers to cancel orders within 2 days
+    if current_user.role != "Consumer":
+        return jsonify({"success": False, "message": "Unauthorized action"}), 403
+
+    if order.accepted_at:
+        time_difference = (datetime.utcnow() - order.accepted_at).days
+        if time_difference > 2:
+            return jsonify({"success": False, "message": "Cancellation period expired"}), 400
+
+    # Update order status to 'Cancelled'
+    order.status = "Cancelled"
+    db.session.commit()
+    
+    return jsonify({"success": True, "message": "Order cancelled successfully!"})
 
 
 @app.route('/agreements/order_<int:order_id>.pdf')
@@ -845,9 +885,105 @@ def update_farmer_location():
 
 # ✅ Connect to `app.db` & Fetch Nearby Farmers
 
-from flask import request, jsonify
-import firebase_admin
-from geopy.distance import geodesic
+# 🔹 Fetch sensor data from Firebase (last 1 hour)
+def fetch_last_hour_data():
+    ref = db.reference("/sensor_data")
+    data = ref.get()
+
+    if not data:
+        return None
+
+    df = pd.DataFrame.from_dict(data, orient="index")
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
+    df = df.sort_values(by="timestamp")  # ✅ Ensure data is sorted by time
+    one_hour_ago = datetime.now() - timedelta(hours=1)
+    df = df[df["timestamp"] >= one_hour_ago]
+
+    return df if not df.empty else None
+
+# 🔹 Train ARIMA model for forecasting
+def train_arima_model(df, target_column="salinity", order=(5,1,0)):
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.set_index("timestamp").asfreq('T')  # ✅ Set time frequency to minutes
+    series = df[target_column].dropna()
+
+    if series.empty:
+        return None
+
+    model = ARIMA(series, order=order)
+    model_fit = model.fit()
+
+    steps = 10080  # 🔹 Predict for next 7 days (7 * 24 * 60)
+    forecast = model_fit.forecast(steps=steps)
+    forecast_index = pd.date_range(start=df.index[-1] + timedelta(minutes=1), periods=steps, freq='T')
+
+    return pd.Series(forecast.values, index=forecast_index)
+
+# 🔹 API Endpoint for Salinity Prediction
+
+# 🔹 Render the Salinity Prediction Page
+@app.route('/salinity-test', methods=['GET'])
+def salinity_test_page():
+    return render_template("salinity_test_page.html")  # ✅ Ensure this file exists in templates/
+
+
+@app.route('/sensor', methods=['GET'])
+def sensor():
+    return render_template("sensor.html")
+  # ✅ Ensure this file exists in templates/
+
+# ✅ Fetch the last 1 hour of salinity data
+# ✅ Fetch the last 1 hour of salinity data
+def fetch_last_hour_data():
+    ref = db.reference("/sensor_data")
+    data = ref.get()
+
+    if not data:
+        return None
+    
+    df = pd.DataFrame.from_dict(data, orient="index")
+    df["timestamp"] = pd.to_datetime(df["timestamp"], unit='ms')
+    
+    one_hour_ago = datetime.now() - timedelta(hours=1)
+    df = df[df["timestamp"] >= one_hour_ago]
+    
+    return df if not df.empty else None
+
+# ✅ Train the ARIMA model for salinity prediction
+def train_arima_model(df, target_column="salinity", order=(5,1,0)):
+    df["timestamp"] = pd.to_datetime(df["timestamp"])
+    df = df.set_index("timestamp").asfreq('T')  # Ensure proper frequency
+    series = df[target_column].dropna()
+    
+    if series.empty:
+        return None
+    
+    model = ARIMA(series, order=order)
+    model_fit = model.fit()
+    steps = 10080  # Predict for next 7 days (10080 minutes)
+    forecast = model_fit.forecast(steps=steps)
+    forecast_index = pd.date_range(start=df.index[-1] + timedelta(minutes=1), periods=steps, freq='T')
+    
+    return pd.Series(forecast.values, index=forecast_index)
+
+# ✅ Route for rendering the salinity test page
+
+# ✅ API Endpoint for predicting salinity levels
+@app.route('/predict-salinity', methods=['GET'])
+def predict_salinity():
+    df = fetch_last_hour_data()
+    if df is None:
+        return jsonify({"error": "No data available for prediction"}), 404
+    
+    forecast_series = train_arima_model(df)
+    if forecast_series is None:
+        return jsonify({"error": "Model training failed due to insufficient data"}), 500
+    
+    response = {str(timestamp): value for timestamp, value in forecast_series.items()}
+    return jsonify(response)
+
+# ✅ Debugging: Show registered routes
+print("✅ Registered Routes:", app.url_map)
 
 # ✅ Initialize Firebase if not already initialized
 if not firebase_admin._apps:
@@ -864,15 +1000,13 @@ def check_nearby_farmers():
         farmer_location = data.get("farmer_location")
 
         if not farmer_id or not farmer_location:
-            return jsonify({"error": "Missing farmer_id or farmer_location"}), 400
+            return jsonify({"error": "Missing farmer_id or farmer_location"}), 400  # ✅ Explicit error message
 
         farmers_ref = firebase_db.reference("farmers")
         all_farmers = farmers_ref.get()
 
-        print("📌 All Farmers Data from Firebase:", all_farmers)  # ✅ Debugging
-
         if not all_farmers:
-            return jsonify({"error": "No farmers found"}), 404  # ✅ Return proper error
+            return jsonify({"matching_farmers": []})
 
         matching_farmers = []
         for other_farmer_id, farmer_data in all_farmers.items():
@@ -881,49 +1015,62 @@ def check_nearby_farmers():
 
             other_location = farmer_data.get("location")
             if not other_location:
-                print(f"⚠ Farmer {other_farmer_id} has no location data.")  # ✅ Debugging
-                continue  
+                continue  # ✅ Skip farmers without location
 
+            # ✅ Calculate Distance
             distance = geodesic(
                 (farmer_location["latitude"], farmer_location["longitude"]),
                 (other_location["latitude"], other_location["longitude"])
             ).km
 
-            if distance <= 10:
+            if distance <= 10:  # ✅ Farmers within 10 km
                 matching_farmers.append({
                     "farmer_id": other_farmer_id,
                     "latitude": other_location["latitude"],
                     "longitude": other_location["longitude"]
                 })
 
-        print("✅ Found Nearby Farmers:", matching_farmers)  # ✅ Debugging Output
+        print("✅ Found Nearby Farmers:", matching_farmers)
         return jsonify({"matching_farmers": matching_farmers}), 200
 
     except Exception as e:
         print(f"❌ Server Error in check_nearby_farmers: {e}")
         return jsonify({"error": str(e)}), 500
-            
-# ✅ Send collaboration request
+
 @app.route('/send_collab_request', methods=['POST'])
 def send_collab_request():
     try:
         data = request.json
         sender_id = data.get('sender_id')
         receiver_id = data.get('receiver_id')
-        order_id = data.get('order_id')
 
-        if not sender_id or not receiver_id or not order_id:
-            return jsonify({'error': 'Missing data'}), 400
+        if not sender_id or not receiver_id:
+            return jsonify({'error': 'Missing sender_id or receiver_id'}), 400
 
-        collab_ref = firebase_db.reference(f'collaboration_requests/{receiver_id}/{sender_id}')
-        collab_ref.set({'status': 'Pending', 'order_id': order_id})
+        # ✅ Store request in Firebase
+        db.reference(f'collaboration_requests/{receiver_id}').set({
+            'sender': sender_id,
+            'status': 'Pending'
+        })
 
-        print(f"✅ Collaboration request sent from {sender_id} to {receiver_id}")
-        return jsonify({'message': 'Collaboration request sent'}), 200
-
+        return jsonify({'message': 'Collaboration request sent successfully!'}), 200
     except Exception as e:
         print(f"❌ Error sending collaboration request: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/get_collab_requests/<farmer_id>', methods=['GET'])
+def get_collab_requests(farmer_id):
+    try:
+        collab_requests_ref = db.reference(f'collaboration_requests/{farmer_id}')
+        requests = collab_requests_ref.get()
+
+        if not requests:
+            return jsonify({'requests': []})
+
+        return jsonify({'requests': requests})
+    except Exception as e:
+        print(f"❌ Error fetching collaboration requests: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 def generate_agreement(order):

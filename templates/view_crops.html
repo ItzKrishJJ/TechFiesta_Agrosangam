@@ -1,10 +1,37 @@
 {% extends "base.html" %} {% block content %}
+
 <div class="container mt-5">
   <h2 class="text-center" style="color: #45595b">Available Crops</h2>
+
+  <!-- ✅ Search Bar (Below Title) -->
+  <div class="d-flex justify-content-center my-3">
+    <input
+      type="text"
+      id="searchInput"
+      class="form-control w-50"
+      placeholder="🔍 Search crops..."
+      onkeyup="searchCrops()"
+    />
+  </div>
+
   <hr />
 
-  <!-- Category Sorting Buttons -->
-  <div class="d-flex justify-content-end mb-4">
+  <!-- ✅ Filters (Sorting & Categories) -->
+  <div class="d-flex justify-content-between mb-4">
+    <!-- Sorting Buttons (Left Side) -->
+    <div class="btn-group">
+      <button class="btn btn-secondary" onclick="sortCrops('price')">
+        <i class="fas fa-sort-amount-up"></i> Price (Low to High)
+      </button>
+      <button class="btn btn-secondary" onclick="sortCrops('grade')">
+        <i class="fas fa-star"></i> Grade
+      </button>
+      <button class="btn btn-secondary" onclick="sortCrops('harvest')">
+        <i class="fas fa-calendar-alt"></i> Harvest Date
+      </button>
+    </div>
+
+    <!-- Category Buttons (Right Side) -->
     <div class="btn-group">
       <a
         href="{{ url_for('view_crops', category='all') }}"
@@ -34,11 +61,17 @@
     </div>
   </div>
 
-  <div class="row justify-content-flex-start">
+  <!-- ✅ Crops List -->
+  <div class="row justify-content-flex-start" id="crop-container">
     {% for crop in crops %}
     <div
       class="col-md-4 d-flex align-items-stretch crop-card"
       data-category="{{ crop.category }}"
+      data-price="{{ crop.price_per_ton }}"
+      data-grade="{{ crop.grade }}"
+      data-harvest="{{ crop.harvest_date }}"
+      data-name="{{ crop.name|lower }}"
+      data-farmer="{{ farmers[crop.farmer_id]|lower }}"
     >
       <div class="card text-center mb-4 shadow-lg">
         <img
@@ -51,7 +84,7 @@
           <div class="card-body-details">
             <p class="card-text">Price Per Ton: ₹{{ crop.price_per_ton }}</p>
             <p class="card-text">
-              Quantity Available: {{ crop.quantity_available }} Tons
+              Quantity Available: {{ crop.quantity_available }} Quintal
             </p>
             <p class="card-text">
               <strong>Farmer:</strong> {{ farmers[crop.farmer_id] }}
@@ -64,7 +97,7 @@
             <form method="POST" action="{{ url_for('add_to_cart') }}">
               <input type="hidden" name="crop_id" value="{{ crop.id }}" />
               <div class="form-group">
-                <label for="quantity_{{ crop.id }}">Quantity (Tons)</label>
+                <label for="quantity_{{ crop.id }}">Quantity (Quintal)</label>
                 <input
                   type="number"
                   id="quantity_{{ crop.id }}"
@@ -87,48 +120,89 @@
   </div>
 </div>
 
+<!-- ✅ JavaScript: Sorting & Search Functionality -->
+<script>
+  function sortCrops(type) {
+    let container = document.getElementById("crop-container");
+    let crops = Array.from(container.getElementsByClassName("crop-card"));
+
+    crops.sort((a, b) => {
+      if (type === "price") {
+        return a.dataset.price - b.dataset.price;
+      } else if (type === "grade") {
+        return a.dataset.grade.localeCompare(b.dataset.grade);
+      } else if (type === "harvest") {
+        return new Date(a.dataset.harvest) - new Date(b.dataset.harvest);
+      }
+    });
+
+    crops.forEach((crop) => container.appendChild(crop));
+  }
+
+  function searchCrops() {
+    let input = document.getElementById("searchInput").value.toLowerCase();
+    let crops = document.querySelectorAll(".crop-card");
+
+    crops.forEach((crop) => {
+      let name = crop.dataset.name;
+      let farmer = crop.dataset.farmer;
+      let category = crop.dataset.category.toLowerCase();
+
+      if (
+        name.includes(input) ||
+        farmer.includes(input) ||
+        category.includes(input)
+      ) {
+        crop.style.display = "block";
+      } else {
+        crop.style.display = "none";
+      }
+    });
+  }
+</script>
+
+<!-- ✅ CSS Styles -->
 <style>
   .card {
     width: 18rem;
     border-radius: 15px;
     overflow: hidden;
-    transition: transform 0.3s ease-in-out; /* Smooth transition */
+    transition: transform 0.3s ease-in-out;
   }
   .card:hover {
-    transform: scale(1.05); /* Zoom effect */
+    transform: scale(1.05);
     box-shadow: 1px 1px 4px #b7b7b8;
   }
   .crop-img {
     height: 200px;
     object-fit: cover;
-    transition: transform 0.3s ease-in-out; /* Smooth transition */
+    transition: transform 0.3s ease-in-out;
   }
   .card img {
-    transition: transform 0.3s ease-in-out; /* Smooth transition */
+    transition: transform 0.3s ease-in-out;
   }
-
   .card img:hover {
-    transform: scale(1.2); /* Zoom effect */
+    transform: scale(1.2);
   }
-
   .card-body {
     display: flex;
     flex-direction: column;
     justify-content: center;
   }
-
   .card-body-details {
     text-align: left;
   }
-
-  .btn-group a {
+  .btn-group a,
+  .btn-group button {
     font-size: 1rem;
     padding: 8px 15px;
   }
-
-  /* Hide crops initially */
-  .crop-card {
-    display: block;
+  /* ✅ Search Bar Styling */
+  #searchInput {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
   }
 </style>
 

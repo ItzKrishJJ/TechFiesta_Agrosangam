@@ -1,0 +1,116 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mt-5">
+  <h2 class="text-center" style="color: #45595b">Real-Time Sensor Data</h2>
+  <hr />
+
+  <!-- ✅ Sensor Data Grid -->
+  <div id="sensor-grid" class="sensor-container">
+    {% set sensor_data = [ ('moisture', 'Moisture', 'moisture.jpg'),
+    ('temperature', 'Temperature', 'temperature.jpg'), ('ec', 'EC', 'ec.jpg'),
+    ('ph', 'pH', 'ph.jpg'), ('nitrogen', 'Nitrogen (N)', 'nitrogen.jpg'),
+    ('phosphorus', 'Phosphorus (P)', 'phosphorous.jpg'), ('potassium',
+    'Potassium (K)', 'potassium.jpg'), ('salinity', 'Salinity', 'salinity.jpg'),
+    ('oxygen', 'Oxygen', 'oxygen.jpg'), ('co2', 'CO₂', 'co2.jpg'),
+    ('compaction', 'Compaction', 'compaction.jpg'), ('redox', 'Redox',
+    'redox.jpg') ] %} {% for id, name, icon in sensor_data %}
+    <div class="sensor-item" id="{{ id }}">
+      <img
+        src="{{ url_for('static', filename='css/images/' + icon) }}"
+        alt="{{ name }}"
+        class="sensor-icon"
+      />
+      <p class="sensor-label">{{ name }}</p>
+      <p class="sensor-value" id="{{ id }}-value">--</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ✅ Firebase Sensor Data Fetching -->
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyADtT3...",
+    authDomain: "agrosangam-57b8a.firebaseapp.com",
+    databaseURL: "https://agrosangam-57b8a-default-rtdb.firebaseio.com",
+    projectId: "agrosangam-57b8a",
+    storageBucket: "agrosangam-57b8a.appspot.com",
+    messagingSenderId: "846469509245",
+    appId: "1:846469509245:web:76c60b3ffc561be3148114",
+  };
+
+  function fetchData() {
+    fetch(
+      `${firebaseConfig.databaseURL}/sensor_data.json?orderBy=%22timestamp%22&limitToLast=1`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data) {
+          console.error("❌ No sensor data found.");
+          return;
+        }
+
+        const latestKey = Object.keys(data)[0];
+        const latestData = data[latestKey];
+
+        // ✅ Update values dynamically
+        updateSensorValue("moisture", latestData.moisture);
+        updateSensorValue("temperature", latestData.temperature);
+        updateSensorValue("ec", latestData.ec);
+        updateSensorValue("ph", latestData.ph);
+        updateSensorValue("nitrogen", latestData.n);
+        updateSensorValue("phosphorus", latestData.p);
+        updateSensorValue("potassium", latestData.k);
+        updateSensorValue("salinity", latestData.salinity);
+        updateSensorValue("oxygen", latestData.oxygen);
+        updateSensorValue("co2", latestData.co2);
+        updateSensorValue("compaction", latestData.compaction);
+        updateSensorValue("redox", latestData.redox);
+      })
+      .catch((error) => console.error("❌ Error fetching data:", error));
+  }
+
+  function updateSensorValue(id, value) {
+    let element = document.getElementById(`${id}-value`);
+    if (element) {
+      element.textContent = value !== undefined ? value : "--";
+    }
+  }
+
+  setInterval(fetchData, 5000); // Fetch data every 5 seconds
+  window.onload = fetchData;
+</script>
+
+<!-- ✅ Custom Styles -->
+<style>
+  .sensor-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    max-width: 900px;
+    margin: auto;
+  }
+  .sensor-item {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  .sensor-icon {
+    width: 50px;
+    height: 50px;
+    margin-bottom: 10px;
+  }
+  .sensor-label {
+    font-weight: bold;
+    color: #45595b;
+  }
+  .sensor-value {
+    font-size: 18px;
+    color: #28a745;
+    font-weight: bold;
+  }
+</style>
+
+{% endblock %}

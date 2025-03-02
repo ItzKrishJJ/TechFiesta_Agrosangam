@@ -1,0 +1,79 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mt-5 salinity-container">
+  <h2 class="text-center">Salinity Prediction</h2>
+  <p class="text-center text-muted">
+    Predict salinity levels for the next 7 days.
+  </p>
+
+  <button class="btn btn-primary mt-3" onclick="fetchPredictions()">
+    <i class="fas fa-chart-line"></i> Get Predictions
+  </button>
+
+  <!-- 🔹 Table for Predicted Data -->
+  <h3 class="mt-4">Predicted Values</h3>
+  <div class="table-responsive">
+    <table class="table table-bordered">
+      <thead class="thead-dark">
+        <tr>
+          <th>Timestamp</th>
+          <th>Salinity (μS/cm)</th>
+        </tr>
+      </thead>
+      <tbody id="prediction-table">
+        <!-- Data will be inserted dynamically -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 🔹 Graph for Visualization -->
+  <h3 class="mt-4">Salinity Forecast Graph</h3>
+  <canvas id="salinityChart"></canvas>
+</div>
+
+<!-- ✅ Custom Styles -->
+<style>
+  .salinity-container {
+    max-width: 800px;
+    margin: auto;
+    padding: 25px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  .table {
+    width: 100%;
+    margin-top: 20px;
+  }
+  canvas {
+    max-width: 100%;
+    height: 400px;
+  }
+</style>
+
+<!-- ✅ JavaScript for Fetching Data & Chart -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  async function fetchPredictions() {
+    try {
+      const response = await fetch("/predict-salinity");
+      const text = await response.text(); // ✅ Read raw response first
+      alert("📡 Raw API Response:", text); // ✅ Debugging
+
+      const data = JSON.parse(text); // ✅ Now parse as JSON
+
+      if (data.error) {
+        alert("Error: " + data.error);
+        return;
+      }
+
+      // ✅ Display predictions in table & chart...
+    } catch (error) {
+      console.error("❌ Error fetching predictions:", error);
+      alert("Error fetching predictions. Check the console for details.");
+    }
+  }
+</script>
+{% endblock %}
