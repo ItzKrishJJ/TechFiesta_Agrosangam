@@ -1,0 +1,71 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>Update Crop</h2>
+  <hr />
+
+  <form method="POST" action="">
+    <div class="form-group">
+      <label for="name">Crop Name</label>
+      <input
+        type="text"
+        id="name"
+        name="name"
+        class="form-control"
+        value="{{ crop.name }}"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="price_per_ton">Price Per Ton</label>
+      <input
+        type="text"
+        id="price_per_ton"
+        name="price_per_ton"
+        class="form-control"
+        value="{{ crop.price_per_ton }}"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="quantity_available">Quantity Available</label>
+      <input
+        type="text"
+        id="quantity_available"
+        name="quantity_available"
+        class="form-control"
+        value="{{ crop.quantity_available }}"
+        required
+      />
+    </div>
+
+    <!-- Harvest Date -->
+    <div class="form-group">
+      <label for="harvest_date">Harvest Date</label>
+      <input
+        type="date"
+        id="harvest_date"
+        name="harvest_date"
+        class="form-control"
+        value="{{ crop.harvest_date }}"
+        required
+      />
+    </div>
+
+    <!-- Grade -->
+    <div class="form-group">
+      <label for="grade">Grade</label>
+      <select id="grade" name="grade" class="form-control" required>
+        <option value="A" {% if crop.grade == "A" %}selected{% endif %}>A</option>
+        <option value="B" {% if crop.grade == "B" %}selected{% endif %}>B</option>
+        <option value="C" {% if crop.grade == "C" %}selected{% endif %}>C</option>
+        <option value="D" {% if crop.grade == "D" %}selected{% endif %}>D</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-success">Update Crop</button>
+    <a href="{{ url_for('farmer_dashboard') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2 class="text-center" style="color: #45595b">Available Crops</h2>
+  <hr />
+
+  <!-- Category Sorting Buttons -->
+  <div class="d-flex justify-content-end mb-4">
+    <div class="btn-group">
+      <a
+        href="{{ url_for('view_crops', category='all') }}"
+        class="btn {% if selected_category == 'all' %}btn-danger{% else %}btn-dark{% endif %}"
+        >All</a
+      >
+      <a
+        href="{{ url_for('view_crops', category='fruits') }}"
+        class="btn {% if selected_category == 'fruits' %}btn-danger{% else %}btn-dark{% endif %}"
+        >Fruits</a
+      >
+      <a
+        href="{{ url_for('view_crops', category='vegetables') }}"
+        class="btn {% if selected_category == 'vegetables' %}btn-danger{% else %}btn-dark{% endif %}"
+        >Vegetables</a
+      >
+      <a
+        href="{{ url_for('view_crops', category='grains') }}"
+        class="btn {% if selected_category == 'grains' %}btn-danger{% else %}btn-dark{% endif %}"
+        >Grains</a
+      >
+      <a
+        href="{{ url_for('view_crops', category='pulses') }}"
+        class="btn {% if selected_category == 'pulses' %}btn-danger{% else %}btn-dark{% endif %}"
+        >Pulses</a
+      >
+    </div>
+  </div>
+
+  <div class="row justify-content-flex-start">
+    {% for crop in crops %}
+    <div
+      class="col-md-4 d-flex align-items-stretch crop-card"
+      data-category="{{ crop.category }}"
+    >
+      <div class="card text-center mb-4 shadow-lg">
+        <img
+          src="{{ url_for('static', filename='css/images/' + crop.name + '.png') }}"
+          class="crop-img card-img-top"
+          alt="{{ crop.name }}"
+        />
+        <div class="card-body">
+          <h5 class="card-title">{{ crop.name }}</h5>
+          <div class="card-body-details">
+            <p class="card-text">Price Per Ton: ₹{{ crop.price_per_ton }}</p>
+            <p class="card-text">
+              Quantity Available: {{ crop.quantity_available }} Tons
+            </p>
+            <p class="card-text">
+              <strong>Farmer:</strong> {{ farmers[crop.farmer_id] }}
+            </p>
+            <p class="card-text">
+              <strong>Harvest Date:</strong> {{ crop.harvest_date }}
+            </p>
+            <p class="card-text"><strong>Grade:</strong> {{ crop.grade }}</p>
+
+            <form method="POST" action="{{ url_for('add_to_cart') }}">
+              <input type="hidden" name="crop_id" value="{{ crop.id }}" />
+              <div class="form-group">
+                <label for="quantity_{{ crop.id }}">Quantity (Tons)</label>
+                <input
+                  type="number"
+                  id="quantity_{{ crop.id }}"
+                  name="quantity"
+                  class="form-control"
+                  min="1"
+                  max="{{ crop.quantity_available }}"
+                  required
+                />
+              </div>
+              <button type="submit" class="btn btn-success p-2 w-100 mt-2">
+                Add to Cart
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<style>
+  .card {
+    width: 18rem;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: transform 0.3s ease-in-out; /* Smooth transition */
+  }
+  .card:hover {
+    transform: scale(1.05); /* Zoom effect */
+    box-shadow: 1px 1px 4px #b7b7b8;
+  }
+  .crop-img {
+    height: 200px;
+    object-fit: cover;
+    transition: transform 0.3s ease-in-out; /* Smooth transition */
+  }
+  .card img {
+    transition: transform 0.3s ease-in-out; /* Smooth transition */
+  }
+
+  .card img:hover {
+    transform: scale(1.2); /* Zoom effect */
+  }
+
+  .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .card-body-details {
+    text-align: left;
+  }
+
+  .btn-group a {
+    font-size: 1rem;
+    padding: 8px 15px;
+  }
+
+  /* Hide crops initially */
+  .crop-card {
+    display: block;
+  }
+</style>
+
+{% endblock %}

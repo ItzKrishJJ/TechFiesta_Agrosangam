@@ -1,0 +1,163 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>Track Your Order</h2>
+  <hr />
+
+  <p>Order ID: <strong>{{ order_id }}</strong></p>
+
+  <button class="btn btn-primary" onclick="fetchLiveLocation()">
+    Refresh Tracking
+  </button>
+
+  <div id="map" style="height: 500px; width: 100%; margin-top: 20px"></div>
+</div>
+
+<!-- ✅ Firebase Initialization -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    onValue,
+  } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyADtT3pbtDOPOyXFaoOc7xlghxsTfCbuVg",
+    authDomain: "agrosangam-57b8a.firebaseapp.com",
+    databaseURL: "https://agrosangam-57b8a-default-rtdb.firebaseio.com",
+    projectId: "agrosangam-57b8a",
+    storageBucket: "agrosangam-57b8a.appspot.com",
+    messagingSenderId: "846469509245",
+    appId: "1:846469509245:web:76c60b3ffc561be3148114",
+    measurementId: "G-FM4XWLCLWK",
+  };
+
+  // ✅ Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // ✅ Store globally for access in other scripts
+  window.firebaseDatabase = database;
+  window.firebaseRef = ref;
+  window.firebaseOnValue = onValue;
+
+  console.log("✅ Firebase Initialized Successfully");
+</script>
+
+<!-- ✅ Ensure Google Maps & Firebase Load Properly -->
+<script>
+  let map, farmerMarker, vehicleMarker, directionsService, directionsRenderer;
+
+  function initMap() {
+    console.log("✅ Google Maps Loaded Successfully");
+
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 20.5937, lng: 78.9629 }, // Default center (India)
+      zoom: 10,
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+      map: map,
+      polylineOptions: { strokeColor: "red", strokeWeight: 5 },
+    });
+
+    farmerMarker = new google.maps.Marker({
+      map: map,
+      icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+      title: "Farmer Location",
+    });
+
+    vehicleMarker = new google.maps.Marker({
+      map: map,
+      icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+      title: "Vehicle Location",
+    });
+
+    // ✅ Fetch Live Location after Firebase initializes
+    setTimeout(fetchLiveLocation, 2000);
+  }
+
+  function fetchLiveLocation() {
+    const orderId = "{{ order_id }}";
+
+    // ✅ Ensure Firebase is initialized
+    if (!window.firebaseDatabase) {
+      console.error(
+        "❌ Firebase is NOT initialized. Cannot fetch live location."
+      );
+      return;
+    }
+
+    const database = window.firebaseDatabase;
+
+    // ✅ Get live vehicle location
+    window.firebaseOnValue(
+      window.firebaseRef(database, `orders/${orderId}/vehicle_location`),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const vehicleLatLng = snapshot.val();
+          const vehiclePosition = new google.maps.LatLng(
+            vehicleLatLng.latitude,
+            vehicleLatLng.longitude
+          );
+
+          vehicleMarker.setPosition(vehiclePosition);
+          console.log("✅ Vehicle Location Updated:", vehiclePosition);
+        } else {
+          console.warn("❌ Vehicle location not found in Firebase.");
+        }
+      }
+    );
+
+    // ✅ Get live consumer location & draw route
+    window.firebaseOnValue(
+      window.firebaseRef(database, `orders/${orderId}/consumer_location`),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const consumerLatLng = snapshot.val();
+          const consumerPosition = new google.maps.LatLng(
+            consumerLatLng.latitude,
+            consumerLatLng.longitude
+          );
+
+          drawRoute(vehicleMarker.getPosition(), consumerPosition);
+          console.log("✅ Consumer Location Updated:", consumerPosition);
+        } else {
+          console.warn("❌ Consumer location not found in Firebase.");
+        }
+      }
+    );
+  }
+
+  function drawRoute(source, destination) {
+    if (!source || !destination) {
+      console.warn("❌ Source or Destination is missing. Cannot draw route.");
+      return;
+    }
+
+    const request = {
+      origin: source,
+      destination: destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+    };
+
+    directionsService.route(request, (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result);
+        console.log("✅ Route Drawn Successfully");
+      } else {
+        console.error("❌ Could not fetch route.");
+      }
+    });
+  }
+</script>
+
+<!-- ✅ Load Google Maps API Properly -->
+<script
+  async
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBrWA4l1vsp8rs1udCDy0ZhNXricftUeKA&callback=initMap"
+></script>
+
+{% endblock %}

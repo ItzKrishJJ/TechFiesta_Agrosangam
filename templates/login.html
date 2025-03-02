@@ -1,0 +1,31 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">Login</h2>
+  <form method="POST" action="/login">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      {{ form.email.label(class="form-label") }} {{
+      form.email(class="form-control") }}
+    </div>
+    <div class="form-group">
+      {{ form.password.label(class="form-label") }} {{
+      form.password(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-success p-2 w-100">
+      {{ form.submit.label }}
+    </button>
+    <input type="hidden" id="latitude" name="latitude" />
+    <input type="hidden" id="longitude" name="longitude" />
+  </form>
+</div>
+
+<script>
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      document.getElementById("latitude").value = position.coords.latitude;
+      document.getElementById("longitude").value = position.coords.longitude;
+    });
+  }
+</script>
+
+{% endblock %}

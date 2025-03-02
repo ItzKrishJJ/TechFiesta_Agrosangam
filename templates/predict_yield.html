@@ -1,0 +1,215 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container crop-yield-container">
+  <h2 class="text-center">Crop Yield Prediction</h2>
+  <p class="text-center text-muted">
+    Enter the details to predict the expected crop yield.
+  </p>
+
+  <div class="form-container">
+    <form id="yieldForm">
+      <!-- Crop Selection -->
+      <div class="form-group">
+        <label for="crop"><i class="fas fa-seedling"></i> Crop:</label>
+        <select id="crop" name="Crop" class="form-control">
+          <option value="Arecanut">Arecanut</option>
+          <option value="Rice">Rice</option>
+          <option value="Wheat">Wheat</option>
+          <option value="Maize">Maize</option>
+          <option value="Sugarcane">Sugarcane</option>
+          <option value="Soyabean">Soyabean</option>
+          <option value="Jowar">Jowar</option>
+          <option value="Groundnut">Groundnut</option>
+          <option value="Turmeric">Turmeric</option>
+          <option value="Pulses">Pulses</option>
+        </select>
+      </div>
+
+      <!-- Season Selection -->
+      <div class="form-group">
+        <label for="season"><i class="fas fa-cloud-sun"></i> Season:</label>
+        <select id="season" name="Season" class="form-control">
+          <option value="Kharif">Kharif</option>
+          <option value="Rabi">Rabi</option>
+          <option value="Summer">Summer</option>
+          <option value="Winter">Winter</option>
+        </select>
+      </div>
+
+      <!-- State Selection -->
+      <div class="form-group">
+        <label for="state"><i class="fas fa-map-marker-alt"></i> State:</label>
+        <select id="state" name="State" class="form-control">
+          <option value="Maharashtra">Maharashtra</option>
+          <option value="Punjab">Punjab</option>
+          <option value="Karnataka">Karnataka</option>
+          <option value="Uttar Pradesh">Uttar Pradesh</option>
+          <option value="Madhya Pradesh">Madhya Pradesh</option>
+        </select>
+      </div>
+
+      <!-- Numerical Inputs -->
+      <div class="form-group">
+        <label for="crop_year"
+          ><i class="fas fa-calendar-alt"></i> Crop Year:</label
+        >
+        <input
+          type="number"
+          id="crop_year"
+          name="crop_year"
+          class="form-control"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="area"
+          ><i class="fas fa-ruler"></i> Area (in hectares):</label
+        >
+        <input
+          type="number"
+          id="area"
+          name="area"
+          class="form-control"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="production"
+          ><i class="fas fa-warehouse"></i> Production (in metric tons):</label
+        >
+        <input
+          type="number"
+          id="production"
+          name="production"
+          class="form-control"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="rainfall"
+          ><i class="fas fa-cloud-rain"></i> Annual Rainfall (mm):</label
+        >
+        <input
+          type="number"
+          id="rainfall"
+          name="rainfall"
+          class="form-control"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="fertilizer"
+          ><i class="fas fa-flask"></i> Fertilizer (kg/ha):</label
+        >
+        <input
+          type="number"
+          id="fertilizer"
+          name="fertilizer"
+          class="form-control"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="pesticide"
+          ><i class="fas fa-bug"></i> Pesticide (kg/ha):</label
+        >
+        <input
+          type="number"
+          id="pesticide"
+          name="pesticide"
+          class="form-control"
+          step="0.01"
+          required
+        />
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-primary btn-block"
+        onclick="predictYield()"
+      >
+        <i class="fas fa-chart-line"></i> Predict Yield
+      </button>
+    </form>
+
+    <!-- Prediction Result -->
+    <h3 class="text-center mt-4">Prediction Result:</h3>
+    <p id="result" class="text-center prediction-result"></p>
+  </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+  .crop-yield-container {
+    max-width: 600px;
+    margin: auto;
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+  }
+
+  .btn {
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .prediction-result {
+    font-size: 18px;
+    font-weight: bold;
+    color: #28a745;
+  }
+
+  @media (max-width: 768px) {
+    .crop-yield-container {
+      padding: 15px;
+    }
+  }
+</style>
+
+<!-- JavaScript for Prediction -->
+<script>
+  function predictYield() {
+    const data = {
+      Crop: document.getElementById("crop").value,
+      Season: document.getElementById("season").value,
+      State: document.getElementById("state").value,
+      Crop_Year: parseInt(document.getElementById("crop_year").value),
+      Area: parseFloat(document.getElementById("area").value),
+      Production: parseFloat(document.getElementById("production").value),
+      Annual_Rainfall: parseFloat(document.getElementById("rainfall").value),
+      Fertilizer: parseFloat(document.getElementById("fertilizer").value),
+      Pesticide: parseFloat(document.getElementById("pesticide").value),
+    };
+
+    fetch("/predict_yield", {
+      // Ensure the correct Flask route
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then((response) => response.json())
+      .then((result) => {
+        document.getElementById("result").innerText =
+          "Predicted Yield: " + parseFloat(result.predicted_yield).toFixed(2);
+      })
+      .catch((error) => {
+        document.getElementById("result").innerText = "Error: " + error;
+      });
+  }
+</script>
+
+{% endblock %}

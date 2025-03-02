@@ -1,0 +1,186 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container recommendation-container">
+  <h2 class="text-center">🌱 Crop Recommendation</h2>
+  <p class="text-center text-muted">
+    Enter soil and weather details to get the best crop recommendation.
+  </p>
+
+  <form id="cropForm" class="recommend-form">
+    <div class="form-group">
+      <label for="N"><i class="fas fa-leaf"></i> Nitrogen (N):</label>
+      <input type="number" id="N" name="N" class="form-control" required />
+    </div>
+
+    <div class="form-group">
+      <label for="P"><i class="fas fa-seedling"></i> Phosphorus (P):</label>
+      <input type="number" id="P" name="P" class="form-control" required />
+    </div>
+
+    <div class="form-group">
+      <label for="K"><i class="fas fa-flask"></i> Potassium (K):</label>
+      <input type="number" id="K" name="K" class="form-control" required />
+    </div>
+
+    <div class="form-group">
+      <label for="temperature"
+        ><i class="fas fa-thermometer-half"></i> Temperature (°C):</label
+      >
+      <input
+        type="number"
+        id="temperature"
+        name="temperature"
+        step="0.1"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="humidity"><i class="fas fa-tint"></i> Humidity (%):</label>
+      <input
+        type="number"
+        id="humidity"
+        name="humidity"
+        step="0.1"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="ph"><i class="fas fa-seedling"></i> Soil pH:</label>
+      <input
+        type="number"
+        id="ph"
+        name="ph"
+        step="0.1"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="rainfall"
+        ><i class="fas fa-cloud-rain"></i> Rainfall (mm):</label
+      >
+      <input
+        type="number"
+        id="rainfall"
+        name="rainfall"
+        step="0.1"
+        class="form-control"
+        required
+      />
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-success btn-block mt-3"
+      onclick="recommendCrop()"
+    >
+      <i class="fas fa-search"></i> Recommend Crop
+    </button>
+  </form>
+
+  <!-- Loading Animation -->
+  <div id="loading" class="loading-spinner" style="display: none">
+    <div class="spinner-border text-success" role="status">
+      <span class="sr-only">Processing...</span>
+    </div>
+    <p>Analyzing your inputs...</p>
+  </div>
+
+  <!-- Result Display -->
+  <div class="result-box mt-4">
+    <h3>Recommended Crop:</h3>
+    <p id="result" class="result-message text-success"></p>
+  </div>
+</div>
+
+<!-- Custom Styles -->
+<style>
+  .recommendation-container {
+    max-width: 600px;
+    margin: auto;
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-group label {
+    font-weight: 600;
+  }
+
+  .loading-spinner {
+    text-align: center;
+    margin-top: 15px;
+  }
+
+  .result-box {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    border: 1px solid #28a745;
+    padding: 10px;
+    border-radius: 8px;
+    background: #e9f5e9;
+    display: none;
+  }
+
+  .result-message {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+</style>
+
+<!-- JavaScript for Handling Form Submission -->
+<script>
+  function recommendCrop() {
+    const formData = {
+      N: document.getElementById("N").value,
+      P: document.getElementById("P").value,
+      K: document.getElementById("K").value,
+      temperature: document.getElementById("temperature").value,
+      humidity: document.getElementById("humidity").value,
+      ph: document.getElementById("ph").value,
+      rainfall: document.getElementById("rainfall").value,
+    };
+
+    // Show loading animation
+    document.getElementById("loading").style.display = "block";
+    document.querySelector(".result-box").style.display = "none"; // Hide result
+
+    fetch("{{ url_for('recommend_crop') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        document.getElementById("loading").style.display = "none"; // Hide loader
+        document.querySelector(".result-box").style.display = "block"; // Show result
+
+        if (data.error) {
+          document.getElementById("result").innerText = "Error: " + data.error;
+          document.getElementById("result").classList.remove("text-success");
+          document.getElementById("result").classList.add("text-danger");
+        } else {
+          document.getElementById("result").innerText =
+            "🌿 " + data.recommended_crop;
+          document.getElementById("result").classList.remove("text-danger");
+          document.getElementById("result").classList.add("text-success");
+        }
+      })
+      .catch((error) => {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("result").innerText = "Error: " + error.message;
+        document.getElementById("result").classList.remove("text-success");
+        document.getElementById("result").classList.add("text-danger");
+      });
+  }
+</script>
+
+{% endblock %}

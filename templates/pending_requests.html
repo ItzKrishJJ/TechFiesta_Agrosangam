@@ -1,0 +1,58 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>Pending Requests</h2>
+  <hr />
+  {% if orders %}
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Consumer Name</th>
+        <th>Farmer Name</th>
+        <th>Crop Name</th>
+        <th>Quantity</th>
+        <th>Total Price</th>
+        <th>Delivery Address</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+      <tr>
+        <td>{{ consumers[order.consumer_id] }}</td>
+        <td>{{ farmers[order.farmer_id] }}</td>
+        <td>{{ order.crop_name }}</td>
+        <td>{{ order.quantity }}</td>
+        <td>₹{{ order.total_price }}</td>
+        <td>{{ order.delivery_address }}</td>
+        <td class="text-center">
+          <div class="btn-group" role="group">
+            <!-- Accept Order -->
+            <form
+              method="POST"
+              action="{{ url_for('accept_order', order_id=order.id) }}"
+            >
+              <button type="submit" class="btn btn-success btn-sm mr-2">
+                Accept
+              </button>
+            </form>
+
+            <!-- Reject Order -->
+            <form
+              method="POST"
+              action="{{ url_for('reject_order', order_id=order.id) }}"
+            >
+              <button type="submit" class="btn btn-danger btn-sm">
+                Reject
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>No pending requests at the moment.</p>
+  {% endif %}
+</div>
+{% endblock %}

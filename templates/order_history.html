@@ -1,0 +1,113 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>Order History</h2>
+  <hr />
+  {% if orders %}
+  <div id="croptable">
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          <th>Order ID</th>
+          <th>Crop Name</th>
+          <th>Quantity</th>
+          <th>Total Price</th>
+          <th>Delivery Address</th>
+          <th>Status</th>
+          <th>Agreement</th>
+          <th>Track Order</th>
+          <th>Collab And Deliver</th>
+          <th>Feedback</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order.id }}</td>
+          <td>{{ order.crop_name }}</td>
+          <td>{{ order.quantity }}</td>
+          <td>₹{{ order.total_price }}</td>
+          <td>{{ order.delivery_address }}</td>
+          <td>
+            {% if order.status == "Accepted" %}
+            <span class="badge badge-success">Accepted</span>
+            {% elif order.status == "Rejected" %}
+            <span class="badge badge-danger">Rejected</span>
+            {% else %}
+            <span class="badge badge-warning">Pending</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if order.agreement_pdf %}
+            <a
+              href="{{ url_for('serve_agreement', order_id=order.id) }}"
+              class="btn btn-info btn-sm"
+              target="_blank"
+            >
+              View Agreement
+            </a>
+            {% else %} N/A {% endif %}
+          </td>
+          <td>
+            {% if order.status == "Accepted" %} {% if current_user.role ==
+            "Farmer" %}
+            <a
+              href="{{ url_for('track_order', order_id=order.id) }}"
+              class="btn btn-primary btn-sm"
+            >
+              Track Order (Farmer)
+            </a>
+            {% elif current_user.role == "Consumer" %}
+            <a
+              href="{{ url_for('consumer_track_order', order_id=order.id) }}"
+              class="btn btn-primary btn-sm"
+            >
+              Track Order (Consumer)
+            </a>
+            {% endif %} {% else %}
+            <span class="badge badge-secondary">Tracking Not Available</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if current_user.role == 'Farmer' %}
+            <li>
+              <a
+                href="{{ url_for('collaborative_delivery', order_id=order.id) }}"
+                class="btn btn-info"
+              >
+                <i class="fas fa-truck"></i> Collaborative Delivery
+              </a>
+            </li>
+            {% endif %}
+          </td>
+          <td>
+            {% if order.status == "Accepted" %} {% if current_user.role ==
+            "Consumer" %}
+            <a
+              href="{{ url_for('submit_feedback', order_id=order.id) }}"
+              class="btn btn-warning btn-sm"
+            >
+              Give Feedback
+            </a>
+            {% if order.feedback %}
+            <p class="mt-2">
+              <strong>Your Feedback:</strong> {{ order.feedback }}
+            </p>
+            {% endif %} {% elif current_user.role == "Farmer" %}
+            <p>
+              <strong>Consumer Feedback:</strong>
+              {{ order.feedback if order.feedback else "No feedback yet" }}
+            </p>
+            {% endif %} {% else %}
+            <span class="badge badge-secondary">Feedback Not Available</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>No orders found.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

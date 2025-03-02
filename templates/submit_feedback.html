@@ -1,0 +1,24 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>Submit Feedback</h2>
+  <hr />
+  <form
+    method="POST"
+    action="{{ url_for('submit_feedback', order_id=order_id) }}"
+  >
+    <div class="form-group">
+      <label for="feedback">Your Feedback</label>
+      <textarea
+        id="feedback"
+        name="feedback"
+        class="form-control"
+        required
+      ></textarea>
+    </div>
+    <button type="submit" class="btn btn-success">Submit Feedback</button>
+    <a href="{{ url_for('order_history') }}" class="btn btn-secondary"
+      >Cancel</a
+    >
+  </form>
+</div>
+{% endblock %}

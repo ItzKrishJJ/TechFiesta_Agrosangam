@@ -1,0 +1,213 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2>Track Order & Share Location</h2>
+  <hr />
+
+  <!-- Farmer Location (Fetched via GPS) -->
+  <div class="form-group">
+    <label for="farmer_address">Your Current Location (Farmer)</label>
+    <input
+      type="text"
+      id="farmer_address"
+      class="form-control"
+      placeholder="Fetching GPS location..."
+    />
+  </div>
+
+  <!-- Consumer Address (Fetched from Order) -->
+  <div class="form-group">
+    <label for="consumer_address">Consumer Address</label>
+    <input
+      type="text"
+      id="consumer_address"
+      class="form-control"
+      value="{{ consumer_address }}"
+      placeholder="Enter Consumer Address"
+    />
+  </div>
+
+  <button class="btn btn-primary" onclick="startTracking()">
+    Start Tracking
+  </button>
+
+  <!-- Google Map -->
+  <div id="map" style="height: 500px; width: 100%; margin-top: 20px"></div>
+</div>
+
+<!-- Firebase (Using ES6 Modules) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    set,
+  } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyADtT3pbtDOPOyXFaoOc7xlghxsTfCbuVg",
+    authDomain: "agrosangam-57b8a.firebaseapp.com",
+    databaseURL: "https://agrosangam-57b8a-default-rtdb.firebaseio.com",
+    projectId: "agrosangam-57b8a",
+    storageBucket: "agrosangam-57b8a.firebasestorage.app",
+    messagingSenderId: "846469509245",
+    appId: "1:846469509245:web:76c60b3ffc561be3148114",
+    measurementId: "G-FM4XWLCLWK",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+
+  // Expose database globally (Required for other scripts to access it)
+  window.database = database;
+  window.firebaseRef = ref;
+  window.firebaseSet = set;
+</script>
+
+<script>
+  let map,
+    farmerMarker,
+    consumerMarker,
+    directionsService,
+    directionsRenderer,
+    watchId;
+  let farmerLatLng = null;
+
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 20.5937, lng: 78.9629 },
+      zoom: 10,
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({
+      map: map,
+      polylineOptions: { strokeColor: "red", strokeWeight: 5 },
+    });
+
+    farmerMarker = new google.maps.Marker({
+      map: map,
+      icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+      title: "Farmer Location",
+    });
+
+    consumerMarker = new google.maps.Marker({
+      map: map,
+      icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png",
+      title: "Consumer Location",
+    });
+
+    new google.maps.places.Autocomplete(
+      document.getElementById("consumer_address")
+    );
+
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          farmerLatLng = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+
+          document.getElementById(
+            "farmer_address"
+          ).value = `Lat: ${farmerLatLng.latitude}, Lng: ${farmerLatLng.longitude}`;
+          updateFirebaseLocation("{{order.id}}", farmerLatLng);
+          farmerMarker.setPosition(
+            new google.maps.LatLng(
+              farmerLatLng.latitude,
+              farmerLatLng.longitude
+            )
+          );
+          map.setCenter(
+            new google.maps.LatLng(
+              farmerLatLng.latitude,
+              farmerLatLng.longitude
+            )
+          );
+        },
+        (error) => {
+          console.error("Error getting location: ", error);
+          alert(
+            "Failed to fetch GPS location. Please enable location services."
+          );
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
+  }
+
+  function startTracking() {
+    const consumerAddress = document.getElementById("consumer_address").value;
+
+    if (!farmerLatLng || !consumerAddress) {
+      alert("Ensure GPS is enabled and enter the consumer address.");
+      return;
+    }
+
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ address: consumerAddress }, (results, status) => {
+      if (status === "OK") {
+        const consumerLatLng = results[0].geometry.location;
+        consumerMarker.setPosition(consumerLatLng);
+        updateFirebaseConsumerLocation("{{order.id}}", consumerLatLng);
+        drawRoute(farmerLatLng, consumerLatLng);
+      } else {
+        alert("Could not find address. Try again.");
+      }
+    });
+  }
+
+  function drawRoute(source, destination) {
+    const request = {
+      origin: new google.maps.LatLng(source.latitude, source.longitude),
+      destination: destination,
+      travelMode: google.maps.TravelMode.DRIVING,
+    };
+
+    directionsService.route(request, (result, status) => {
+      if (status === google.maps.DirectionsStatus.OK) {
+        directionsRenderer.setDirections(result);
+      } else {
+        alert("Could not fetch the route. Please check the addresses.");
+      }
+    });
+  }
+
+  function updateFirebaseLocation(orderId, location) {
+    if (window.database) {
+      window.firebaseSet(
+        window.firebaseRef(
+          window.database,
+          `orders/${orderId}/vehicle_location`
+        ),
+        location
+      );
+    }
+  }
+
+  function updateFirebaseConsumerLocation(orderId, location) {
+    if (window.database) {
+      window.firebaseSet(
+        window.firebaseRef(
+          window.database,
+          `orders/${orderId}/consumer_location`
+        ),
+        {
+          latitude: location.lat(),
+          longitude: location.lng(),
+        }
+      );
+    }
+  }
+</script>
+
+<!-- Load Google Maps API -->
+<script
+  async
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBrWA4l1vsp8rs1udCDy0ZhNXricftUeKA&libraries=places,directions&callback=initMap"
+></script>
+
+{% endblock %}

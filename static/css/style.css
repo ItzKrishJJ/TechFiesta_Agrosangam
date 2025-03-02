@@ -1,0 +1,330 @@
+/* Ensure the body stretches to fill the viewport */
+
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Nunito:wght@200;300;400;600;700&display=swap");
+
+* {
+  font-family: "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  border: none;
+  text-decoration: none;
+  text-transform: capitalize;
+  transition: all 0.2s linear;
+}
+h2 {
+  color: #45595b;
+}
+body {
+  background: linear-gradient(
+      rgba(248, 223, 173, 0.1),
+      rgba(248, 223, 173, 0.1)
+    ),
+    url("../images/hero-img.jpg");
+  background-size: cover; /* Ensure it covers the full section */
+  background-position: center; /* Center the background */
+  background-attachment: fixed; /* Keep it static while scrolling */
+  background-repeat: no-repeat; /* No repetition */
+  width: 100%;
+  height: 200h; /* Full viewport height */
+}
+.homesection {
+  overflow-x: hidden;
+  scroll-padding-top: 6.5rem;
+  scroll-behavior: smooth;
+}
+
+.homesection .btn1 {
+  display: inline-block;
+  margin-top: 1rem;
+  background: var(--green);
+  color: #fff;
+  padding: 10px 7px 10px 7px;
+  font-size: 1rem;
+  text-align: center;
+  cursor: pointer;
+  width: 14rem;
+}
+
+.homesection .btn1:hover {
+  background-color: black;
+  color: white;
+}
+
+/* Make the footer stick to the bottom */
+footer {
+  background-color: #81c408;
+  color: #333;
+  padding: 20px 0;
+  text-align: center;
+  height: 200px; /* Reduced height */
+  margin-top: 1.5rem;
+  position: static;
+  bottom: 0;
+  width: 100%;
+}
+
+footer h5 {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+footer #followus {
+  display: block;
+}
+footer a {
+  text-decoration: none;
+  color: #333;
+  transition: color 0.3s ease;
+}
+footer #quicklinks {
+  display: flex;
+  flex-direction: row;
+  margin-left: 35%;
+  align-items: baseline;
+}
+footer a:hover {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+footer i {
+  margin-right: 8px;
+  color: #007bff;
+  font-size: 18px;
+}
+
+/* Form */
+form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+form .form-group {
+  margin-bottom: 1.5em;
+}
+
+form .btn-primary {
+  width: 100%;
+}
+.navbar-brand {
+  font-size: 1.7rem;
+}
+/* Navbar Styling */
+#header_navbar {
+  background-color: #81c408; /* Light Green */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 10px 0;
+}
+
+/* Custom Navbar Wrapper */
+.navbar-wrapper {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* App Name Styling */
+#Appname {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Navbar Links */
+.navbar-nav .nav-item .nav-link {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #f3faf2;
+  margin-right: 15px;
+  transition: all 0.3s ease-in-out;
+}
+
+.navbar-nav .nav-item .nav-link:hover {
+  color: #218838;
+  transform: scale(1.05);
+}
+
+/* Navbar Toggler Icon */
+.navbar-toggler {
+  border: none;
+  background: none;
+}
+
+/* Cart Icon Styling */
+.navbar-nav .nav-item .nav-link i.fas.fa-cart-plus {
+  margin-right: 5px;
+}
+
+/* Cart Badge */
+.navbar-nav .nav-item .nav-link .badge {
+  background-color: #007bff;
+  color: white;
+  font-size: 0.9rem;
+  padding: 5px 8px;
+  border-radius: 50%;
+}
+
+/* Ensure all navbar links are center-aligned */
+.navbar-nav {
+  display: flex;
+  align-items: center;
+}
+
+/* Cart Badge (Item Count) */
+.cart-badge {
+  position: relative;
+  top: -8px;
+  right: -8px;
+  background-color: red;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: bold;
+  padding: 3px 6px;
+  border-radius: 50%;
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Responsive Navbar */
+@media (max-width: 768px) {
+  .navbar-nav {
+    text-align: center;
+  }
+  .navbar-nav .nav-item {
+    margin-bottom: 10px;
+  }
+  .navbar-wrapper {
+    width: 100%;
+  }
+}
+
+.custom-button {
+  margin-top: 10px;
+  display: block;
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  background-color: #ad6800;
+  color: #fff;
+  transition: background-color 0.3s ease;
+}
+
+.custom-button:hover {
+  background-color: #874d00;
+}
+.homesection {
+  display: flex;
+  width: 100%;
+}
+
+.home {
+  display: flex;
+  align-items: center;
+  max-width: 100%;
+  justify-content: space-between;
+}
+
+.home .image {
+  flex: 1 1 40rem;
+  padding-top: 5rem;
+}
+
+.home .image img {
+  width: 100%;
+}
+
+.home .content {
+  flex: 1 1 40rem;
+  width: 100%;
+}
+
+.home .content span {
+  font-size: 1.5rem;
+  color: #ffb524;
+  font-weight: bold;
+}
+
+.home .content h3 {
+  font-size: 3rem;
+  font-weight: 800;
+  line-height: 1.2;
+  width: 100%;
+  color: #81c408;
+  object-fit: fill;
+  margin-bottom: -4px;
+}
+
+footer #socialicons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#croptable table {
+  border-collapse: collapse;
+  margin: 25px 0;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+#farmer_dashboard {
+  border: 1px solid rgb(145, 139, 139);
+  padding: 15px;
+  border-radius: 1rem;
+}
+#farmer_dashboard button {
+  display: inline-block;
+  margin-top: 1rem;
+  background: var(--green);
+  color: #fff;
+  padding: 10px 7px 10px 7px;
+  font-size: 1rem;
+  text-align: center;
+  cursor: pointer;
+  width: 14rem;
+  margin-left: 25%;
+}
+/* Ensure buttons in pending orders are aligned properly */
+.btn-group form {
+  display: inline-block;
+  margin-right: 5px;
+}
+
+#croptable table thead tr {
+  background-color: #009879;
+  color: #ffffff;
+  text-align: left;
+}
+#croptable table th,
+#croptable table td {
+  padding: 12px 15px;
+}
+#croptable table tbody tr {
+  border-bottom: 1px solid #dddddd;
+}
+
+#croptable table tbody tr:nth-of-type(even) {
+  background-color: #f3f3f3;
+}
+
+#croptable table tbody tr:last-of-type {
+  border-bottom: 2px solid #009879;
+}
+#croptable table tbody tr.active-row {
+  font-weight: bold;
+  color: #009879;
+}
+#croptable table {
+  border-collapse: collapse;
+  margin: 25px 0;
+  font-size: 0.9em;
+  font-family: sans-serif;
+  min-width: 400px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}

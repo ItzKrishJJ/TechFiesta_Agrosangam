@@ -1,0 +1,302 @@
+{% extends "base.html" %} {% block content %}
+<div class="container">
+  <header>
+    <h1 style="color: #45595b">Your Cart</h1>
+  </header>
+  <hr />
+  {% if cart %}
+  <section class="cart">
+    <table class="table table-bordered">
+      <thead class="thead-dark">
+        <tr>
+          <th>Image</th>
+          <th>Crop Name</th>
+          <th>Price Per Ton</th>
+          <th>Quantity</th>
+          <th>Total Price</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cart %}
+        <tr>
+          <td>
+            <img
+              src="{{ url_for('static', filename='css/images/' + item.crop_name + '.png') }}"
+              alt="{{ item.crop_name }}"
+              class="cart-img"
+            />
+          </td>
+          <td>{{ item.crop_name }}</td>
+          <td>₹{{ item.price_per_ton }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('update_cart') }}">
+              <input type="hidden" name="crop_id" value="{{ item.crop_id }}" />
+              <input
+                type="number"
+                min="1"
+                name="quantity"
+                value="{{ item.quantity }}"
+                class="quantity form-control"
+                data-price="{{ item.price_per_ton }}"
+                required
+              />
+              <button type="submit" class="btn btn-info btn-sm mt-2">
+                Update
+              </button>
+            </form>
+          </td>
+          <td class="total">₹{{ item.total_price }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('remove_from_cart') }}">
+              <input type="hidden" name="crop_id" value="{{ item.crop_id }}" />
+              <button type="submit" class="btn btn-danger btn-sm">
+                Remove
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Delivery Cost Calculation Section -->
+  <div class="delivery-section mt-4 p-4">
+    <h3>Delivery Details</h3>
+    <!-- Farmer Address Input -->
+    <div class="form-group">
+      <label for="farmer_location">Farmer's Location (Auto-Fetched)</label>
+      <input
+        type="text"
+        id="farmer_location"
+        class="form-control"
+        value="{% if cart %}{{ cart[0].farmer_address }}{% endif %}"
+        required
+      />
+    </div>
+
+    <div class="form-group">
+      <label for="consumer_location">Consumer's Location</label>
+      <input
+        type="text"
+        id="consumer_location"
+        class="form-control"
+        placeholder="Enter your delivery address"
+        required
+      />
+    </div>
+
+    <button
+      type="button"
+      class="btn btn-primary btn-block"
+      onclick="calculateCost()"
+    >
+      Calculate Cost
+    </button>
+  </div>
+
+  <!-- Cost Summary Section -->
+  <div class="cart-total-section mt-4 p-4">
+    <h3>Cost Summary</h3>
+    <div class="cart-summary-box">
+      <div class="cart-total-item">
+        <span>Subtotal:</span>
+        <span id="cart-subtotal">₹0.00</span>
+      </div>
+      <div class="cart-total-item">
+        <span>Delivery Cost:</span>
+        <span id="delivery-cost">₹0.00</span>
+      </div>
+      <hr />
+      <div class="cart-total-final">
+        <span><strong>Total:</strong></span>
+        <span id="cart-total"><strong>₹0.00</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Place Order Button -->
+  <form method="POST" action="{{ url_for('place_order') }}" class="mt-4">
+    <input type="hidden" id="source_address" name="source_address" />
+    <input type="hidden" id="destination_address" name="destination_address" />
+    <input type="hidden" id="delivery_cost_input" name="delivery_cost" />
+    <input type="hidden" id="final_total_price" name="final_total_price" />
+    <button type="submit" class="btn btn-success btn-block">Place Order</button>
+  </form>
+
+  {% else %}
+  <p>Your cart is empty!</p>
+  {% endif %}
+</div>
+
+<!-- Google Maps API -->
+<script
+  async
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBrWA4l1vsp8rs1udCDy0ZhNXricftUeKA&libraries=places"
+></script>
+
+<script>
+  let totalQuantity = 0;
+
+  document.addEventListener("DOMContentLoaded", updateCart);
+
+  function updateCart() {
+    let subtotal = 0;
+    totalQuantity = 0;
+    document.querySelectorAll(".quantity").forEach((input) => {
+      const price = parseFloat(input.getAttribute("data-price"));
+      const quantity = parseInt(input.value) || 0;
+      const row = input.closest("tr");
+      const totalCell = row.querySelector(".total");
+      const total = price * quantity;
+      totalCell.textContent = `₹${total.toFixed(2)}`;
+      subtotal += total;
+      totalQuantity += quantity;
+    });
+
+    document.getElementById("cart-subtotal").textContent = `₹${subtotal.toFixed(
+      2
+    )}`;
+    document.getElementById("cart-total").textContent = `₹${subtotal.toFixed(
+      2
+    )}`;
+  }
+
+  function calculateCost() {
+    let source = document.getElementById("farmer_location").value;
+    let destinationInput = document.getElementById("consumer_location");
+    let destination = destinationInput.value.trim(); // Get entered value
+
+    if (!source || !destination) {
+      alert("Please enter both addresses!");
+      return;
+    }
+
+    let service = new google.maps.DistanceMatrixService();
+    service.getDistanceMatrix(
+      {
+        origins: [source],
+        destinations: [destination],
+        travelMode: "DRIVING",
+      },
+      function (response, status) {
+        if (status !== "OK") {
+          alert("Error calculating distance: " + status);
+          return;
+        }
+
+        // Get cart subtotal
+        let subtotal = parseFloat(
+          document
+            .getElementById("cart-subtotal")
+            .textContent.replace("₹", "")
+            .trim()
+        );
+
+        if (isNaN(subtotal) || subtotal <= 0) {
+          alert("Error calculating total price. Please try again!");
+          return;
+        }
+
+        // Get total quantity dynamically
+        let totalQuantity = 0;
+        document.querySelectorAll(".quantity").forEach((input) => {
+          totalQuantity += parseInt(input.value) || 0;
+        });
+
+        if (totalQuantity <= 0) {
+          alert("Cart is empty! Please add items.");
+          return;
+        }
+
+        // Calculate delivery cost
+        let distance_km = response.rows[0].elements[0].distance.value / 1000;
+        let price_per_km = 10;
+        let delivery_cost = distance_km * price_per_km * totalQuantity;
+
+        // Calculate final total price
+        let finalTotal = subtotal + delivery_cost;
+
+        // Update UI
+        document.getElementById(
+          "delivery-cost"
+        ).textContent = `₹${delivery_cost.toFixed(2)}`;
+        document.getElementById(
+          "cart-total"
+        ).textContent = `₹${finalTotal.toFixed(2)}`;
+
+        // Store values in hidden input fields for backend
+        document.getElementById("source_address").value = source;
+
+        // **Fix:** Ensure destination stays fixed
+        document.getElementById("destination_address").value = destination;
+        destinationInput.value = destination; // Keep entered value
+
+        document.getElementById("delivery_cost_input").value =
+          delivery_cost.toFixed(2);
+        document.getElementById("final_total_price").value =
+          finalTotal.toFixed(2);
+      }
+    );
+  }
+
+  function initAutocomplete() {
+    let farmerInput = document.getElementById("farmer_location");
+    let consumerInput = document.getElementById("consumer_location");
+
+    new google.maps.places.Autocomplete(farmerInput);
+    new google.maps.places.Autocomplete(consumerInput);
+  }
+
+  google.maps.event.addDomListener(window, "load", initAutocomplete);
+</script>
+
+<style>
+  .cart-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 5px;
+  }
+
+  .delivery-section,
+  .cart-total-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 600px;
+    margin: auto;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  footer {
+    bottom: 0;
+    position: static;
+    margin-top: 20%;
+  }
+  .cart-summary-box {
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+  }
+
+  .cart-total-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .cart-total-final {
+    font-weight: bold;
+    font-size: 20px;
+  }
+
+  .btn-block {
+    font-size: 18px;
+    padding: 10px;
+  }
+</style>
+
+{% endblock %}

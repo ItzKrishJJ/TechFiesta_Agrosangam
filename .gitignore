@@ -1,0 +1,6 @@
+.venv
+env
+ml
+__pycache__
+node_modules
+agrosangam-57b8a-firebase-adminsdk-fbsvc-7e17b1d5cb.json

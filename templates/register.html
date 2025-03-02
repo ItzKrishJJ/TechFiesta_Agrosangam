@@ -1,0 +1,99 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">Register</h2>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %}
+  <div>
+    {% for category, message in messages %}
+    <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %} {% endwith %}
+
+  <!-- Registration Form -->
+  <form method="POST" action="{{ url_for('register') }}">
+    {{ form.hidden_tag() }}
+
+    <!-- Username -->
+    <div class="form-group">
+      {{ form.username.label(class="form-label") }} {{
+      form.username(class="form-control") }} {% if form.username.errors %}
+      <small class="text-danger">{{ form.username.errors[0] }}</small>
+      {% endif %}
+      <small class="form-text text-muted">Enter your full name.</small>
+    </div>
+
+    <!-- Aadhar Number -->
+    <div class="form-group">
+      {{ form.aadhar_no.label(class="form-label") }} {{
+      form.aadhar_no(class="form-control") }} {% if form.aadhar_no.errors %}
+      <small class="text-danger">{{ form.aadhar_no.errors[0] }}</small>
+      {% endif %}
+      <small class="form-text text-muted"
+        >Enter a 12-digit Aadhar number (e.g., 123456789012).</small
+      >
+    </div>
+
+    <!-- Phone Number -->
+    <div class="form-group">
+      {{ form.phone_no.label(class="form-label") }} {{
+      form.phone_no(class="form-control") }} {% if form.phone_no.errors %}
+      <small class="text-danger">{{ form.phone_no.errors[0] }}</small>
+      {% endif %}
+      <small class="form-text text-muted">Enter a 10-digit phone number.</small>
+    </div>
+
+    <!-- Role -->
+    <div class="form-group">
+      {{ form.role.label(class="form-label") }} {{
+      form.role(class="form-control") }} {% if form.role.errors %}
+      <small class="text-danger">{{ form.role.errors[0] }}</small>
+      {% endif %}
+    </div>
+
+    <!-- Email -->
+    <div class="form-group">
+      {{ form.email.label(class="form-label") }} {{
+      form.email(class="form-control") }} {% if form.email.errors %}
+      <small class="text-danger">{{ form.email.errors[0] }}</small>
+      {% endif %}
+    </div>
+
+    <!-- Password -->
+    <div class="form-group">
+      {{ form.password.label(class="form-label") }} {{
+      form.password(class="form-control") }} {% if form.password.errors %}
+      <small class="text-danger">{{ form.password.errors[0] }}</small>
+      {% endif %}
+      <small class="form-text text-muted"
+        >Password must be at least 6 characters.</small
+      >
+    </div>
+
+    <!-- Confirm Password -->
+    <div class="form-group">
+      {{ form.confirm_password.label(class="form-label") }} {{
+      form.confirm_password(class="form-control") }} {% if
+      form.confirm_password.errors %}
+      <small class="text-danger">{{ form.confirm_password.errors[0] }}</small>
+      {% endif %}
+    </div>
+
+    <!-- CAPTCHA -->
+    <div class="form-group">
+      {{ form.captcha.label(class="form-label") }} {{
+      form.captcha(class="form-control") }} {% if form.captcha.errors %}
+      <small class="text-danger">{{ form.captcha.errors[0] }}</small>
+      {% endif %}
+      <small class="form-text text-muted"
+        >Solve the CAPTCHA to prove you're human.</small
+      >
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary">Register</button>
+  </form>
+</div>
+{% endblock %}

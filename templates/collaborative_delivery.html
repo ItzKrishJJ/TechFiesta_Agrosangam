@@ -1,0 +1,232 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mt-5">
+  <h2 class="text-center">Collaborative Delivery Optimization</h2>
+  <p class="text-center text-muted">
+    If nearby farmers are within 10 km, you can collaborate to reduce costs.
+  </p>
+  <hr />
+
+  <!-- ✅ Farmer GPS Location -->
+  <div class="form-group">
+    <label for="farmer_address">Your Current Location (Farmer)</label>
+    <input
+      type="text"
+      id="farmer_address"
+      class="form-control"
+      placeholder="Fetching GPS location..."
+      readonly
+    />
+  </div>
+
+  <!-- ✅ Delivery Destination -->
+  <div class="form-group">
+    <label for="consumer_address">Delivery Destination</label>
+    <input
+      type="text"
+      id="consumer_address"
+      class="form-control"
+      value="{{ consumer_address }}"
+      placeholder="Enter Consumer Address"
+    />
+  </div>
+
+  <button class="btn btn-primary" onclick="findNearbyFarmers()">
+    <i class="fas fa-search-location"></i> Find Nearby Farmers
+  </button>
+
+  <!-- ✅ Display Nearby Farmers -->
+  <div id="matching-farmers" class="mt-4"></div>
+
+  <!-- ✅ Display Collaboration Requests -->
+  <h4 class="mt-4">Collaboration Requests</h4>
+  <div id="collab-requests"></div>
+
+  <!-- ✅ Google Map -->
+  <div id="map" style="height: 500px; width: 100%; margin-top: 20px"></div>
+</div>
+
+<!-- ✅ Firebase Initialization -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-app.js";
+  import {
+    getDatabase,
+    ref,
+    set,
+    get,
+  } from "https://www.gstatic.com/firebasejs/11.3.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyADtT3pbtDOPOyXFaoOc7xlghxsTfCbuVg",
+    authDomain: "agrosangam-57b8a.firebaseapp.com",
+    databaseURL: "https://agrosangam-57b8a-default-rtdb.firebaseio.com",
+    projectId: "agrosangam-57b8a",
+    storageBucket: "agrosangam-57b8a.firebasestorage.app",
+    messagingSenderId: "846469509245",
+    appId: "1:846469509245:web:76c60b3ffc561be3148114",
+    measurementId: "G-FM4XWLCLWK",
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
+  window.firebaseDatabase = database;
+  window.firebaseRef = ref;
+  window.firebaseSet = set;
+  window.firebaseGet = get;
+</script>
+
+<!-- ✅ JavaScript Logic -->
+<script>
+  let map, farmerMarker;
+  let farmerLatLng = null;
+  let farmerId = "{{ current_user.id }}";
+  let markers = [];
+
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 20.5937, lng: 78.9629 },
+      zoom: 10,
+    });
+
+    farmerMarker = new google.maps.Marker({
+      map: map,
+      icon: "https://maps.google.com/mapfiles/ms/icons/green-dot.png",
+      title: "Your Location",
+    });
+
+    startLiveLocationTracking();
+  }
+
+  function startLiveLocationTracking() {
+    if (navigator.geolocation) {
+      navigator.geolocation.watchPosition(
+        (position) => {
+          farmerLatLng = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+
+          document.getElementById(
+            "farmer_address"
+          ).value = `Lat: ${farmerLatLng.latitude}, Lng: ${farmerLatLng.longitude}`;
+
+          farmerMarker.setPosition(
+            new google.maps.LatLng(
+              farmerLatLng.latitude,
+              farmerLatLng.longitude
+            )
+          );
+          map.setCenter(
+            new google.maps.LatLng(
+              farmerLatLng.latitude,
+              farmerLatLng.longitude
+            )
+          );
+
+          updateFirebaseLocation(farmerId, farmerLatLng);
+        },
+        (error) => {
+          console.error("❌ GPS Error:", error);
+          alert(
+            "Failed to fetch GPS location. Please enable location services."
+          );
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert("❌ Geolocation is not supported by this browser.");
+    }
+  }
+
+  function updateFirebaseLocation(farmerId, location) {
+    if (window.firebaseDatabase) {
+      window.firebaseSet(
+        window.firebaseRef(
+          window.firebaseDatabase,
+          `farmers/${farmerId}/location`
+        ),
+        location
+      );
+    }
+  }
+
+  async function findNearbyFarmers() {
+    if (!farmerLatLng) {
+      alert("❌ Error: GPS location not available.");
+      return;
+    }
+
+    const requestData = {
+      farmer_id: farmerId, // ✅ Correct farmer_id
+      farmer_location: {
+        latitude: farmerLatLng.latitude,
+        longitude: farmerLatLng.longitude,
+      },
+    };
+
+    console.log("📡 Sending Request to Server:", requestData); // ✅ Debugging
+
+    try {
+      let response = await fetch("/check_nearby_farmers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestData),
+      });
+
+      if (!response.ok) {
+        let errorText = await response.text(); // ✅ Capture error message
+        throw new Error(`Server error: ${response.status} - ${errorText}`);
+      }
+
+      let data = await response.json();
+      console.log("✅ Nearby Farmers:", data);
+
+      if (data.matching_farmers.length === 0) {
+        document.getElementById("matching-farmers").innerHTML =
+          "<p class='text-danger'>No nearby farmers found.</p>";
+      } else {
+        displayNearbyFarmers(data.matching_farmers);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching nearby farmers:", error);
+      document.getElementById(
+        "matching-farmers"
+      ).innerHTML = `<p class='text-danger'>Error: ${error.message}</p>`;
+    }
+  }
+
+  function sendCollabRequest(farmer_id) {
+    alert("Collaboration request sent to Farmer " + farmer_id);
+
+    const requestData = {
+      sender_id: "{{ current_user.id }}",
+      receiver_id: farmer_id,
+    };
+
+    fetch("/send_collab_request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestData),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        alert(data.message);
+      })
+      .catch((error) => {
+        console.error("❌ Error sending collab request:", error);
+        alert("Error sending collaboration request.");
+      });
+  }
+
+  window.onload = function () {
+    startLiveLocationTracking();
+  };
+</script>
+
+<script
+  async
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBrWA4l1vsp8rs1udCDy0ZhNXricftUeKA&libraries=places,directions&callback=initMap"
+></script>
+
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mt-5">
+  <h2 class="text-center">AI HELP - Agriculture Assistant</h2>
+  <hr />
+
+  <!-- Chatbot Section -->
+  <div class="chat-container">
+    <div class="chat-box" id="chat-box"></div>
+    <div class="input-area">
+      <input
+        type="text"
+        id="user-input"
+        class="form-control"
+        placeholder="Ask about crops, soil, pests..."
+      />
+      <button onclick="sendMessage()" class="btn btn-success">Send</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .chat-container {
+    width: 100%;
+    max-width: 700px;
+    margin: auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-box {
+    height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+  }
+
+  .user-message {
+    text-align: right;
+    color: #fff;
+    background: #27ae60;
+    padding: 8px;
+    border-radius: 10px;
+    margin: 5px 0;
+    display: inline-block;
+  }
+
+  .bot-message {
+    text-align: left;
+    color: #000;
+    background: #e0e0e0;
+    padding: 8px;
+    border-radius: 10px;
+    margin: 5px 0;
+    display: inline-block;
+  }
+
+  .input-area {
+    display: flex;
+    padding: 10px;
+    background: #fff;
+    border-top: 1px solid #ddd;
+  }
+
+  .input-area input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+
+  .input-area button {
+    padding: 8px 15px;
+    margin-left: 5px;
+    border: none;
+    background: #27ae60;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .input-area button:hover {
+    background: #219150;
+  }
+</style>
+
+<script>
+  function sendMessage() {
+    var userQuery = $("#user-input").val();
+    if (userQuery.trim() === "") return;
+
+    $("#chat-box").append("<p class='user-message'>You: " + userQuery + "</p>");
+
+    $.ajax({
+      type: "POST",
+      url: "/ask",
+      data: { user_query: userQuery },
+      success: function (response) {
+        if (response.response) {
+          $("#chat-box").append(
+            "<p class='bot-message'>Bot: " + response.response + "</p>"
+          );
+        } else {
+          $("#chat-box").append(
+            "<p class='bot-message'>Bot: Sorry, an error occurred.</p>"
+          );
+        }
+        $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
+      },
+    });
+
+    $("#user-input").val("");
+  }
+</script>
+
+{% endblock %}

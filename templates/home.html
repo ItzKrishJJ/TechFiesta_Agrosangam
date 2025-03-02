@@ -1,0 +1,71 @@
+{% extends "base.html" %} {% block content %}
+<div class="homesection home-bg">
+  <!-- Home Section -->
+  <section class="home" id="home">
+    <div class="image">
+      <img
+        src="{{ url_for('static', filename='css/images/home-img.png') }}"
+        alt="Home Image"
+      />
+    </div>
+
+    <div class="content">
+      <span>Welcome to AgroSangam</span>
+      <h3>Your partner in revolutionizing the farm-to-table journey.</h3>
+
+      <!-- Updated Button -->
+      <a href="{{ url_for('redirect_user') }}" class="btn1"
+        >Let's Get Started</a
+      >
+    </div>
+  </section>
+</div>
+
+<!-- Styles -->
+<style>
+  /* Fullscreen Background Image */
+  .home-bg {
+    background: linear-gradient(
+        rgba(248, 223, 173, 0.1),
+        rgba(248, 223, 173, 0.1)
+      ),
+      url("{{ url_for('static', filename='css/images/hero-img.jpg') }}");
+    background-size: cover; /* Ensure it covers the full section */
+    background-position: center; /* Center the background */
+    background-attachment: fixed; /* Keep it static while scrolling */
+    background-repeat: no-repeat; /* No repetition */
+    width: 100%;
+    height: 200h; /* Full viewport height */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -20px;
+    margin-bottom: -20px;
+    transition: transform 0.3s ease-in-out;
+  }
+
+  /* Home Section Layout */
+  .home {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 100%;
+    padding: 50px;
+    text-align: left;
+  }
+
+  /* Ensure Image Covers Space */
+  .image img {
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    border-radius: 10px;
+    transition: transform 0.3s ease-in-out;
+  }
+  .image img:hover {
+    transform: scale(1.2); /* Zoom effect */
+    shadow: 1px 1px 4px gray;
+  }
+</style>
+{% endblock %}

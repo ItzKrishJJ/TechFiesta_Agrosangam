@@ -1,0 +1,189 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container freshness-container">
+  <h2 class="text-center">Freshness Test</h2>
+  <p class="text-center text-muted">
+    Upload an image to detect if the crop is fresh or rotten.
+  </p>
+
+  <div class="upload-section text-center">
+    <label for="imageInput" class="custom-file-upload">
+      <i class="fas fa-cloud-upload-alt"></i> Choose Image
+    </label>
+    <input
+      type="file"
+      id="imageInput"
+      accept="image/*"
+      class="form-control"
+      hidden
+      onchange="previewImage()"
+    />
+
+    <!-- File Name Display -->
+    <p id="file-name" class="file-name"></p>
+
+    <br />
+    <button class="btn btn-success mt-3" onclick="uploadImage()">
+      <i class="fas fa-upload"></i> Upload & Predict
+    </button>
+  </div>
+
+  <!-- Image Preview -->
+  <div class="image-preview-container mt-4">
+    <img
+      id="image-preview"
+      src=""
+      class="img-preview hidden"
+      alt="Image Preview"
+    />
+  </div>
+
+  <!-- Result Display -->
+  <p id="result" class="result-message hidden"></p>
+</div>
+
+<!-- Custom Styles -->
+<style>
+  .freshness-container {
+    max-width: 600px;
+    margin: auto;
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+
+  .custom-file-upload {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #28a745;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+  }
+
+  .custom-file-upload:hover {
+    background: #218838;
+  }
+
+  .file-name {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #555;
+  }
+
+  .upload-section {
+    text-align: center;
+  }
+
+  .image-preview-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s ease-in-out;
+    margin-bottom: 10px;
+  }
+
+  .img-preview {
+    display: none;
+    width: 320px;
+    height: 320px;
+    object-fit: cover;
+    border-radius: 10px;
+    margin-top: 15px;
+    border: 3px solid #28a745;
+    padding: 5px;
+    transition: all 0.3s ease-in-out;
+  }
+
+  .result-message {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 15px;
+  }
+
+  .result-message.fresh {
+    color: green;
+  }
+
+  .result-message.rotten {
+    color: red;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .img-preview {
+      width: 250px;
+      height: 250px;
+    }
+  }
+</style>
+
+<!-- JavaScript -->
+<script>
+  function previewImage() {
+    const fileInput = document.getElementById("imageInput");
+    const fileNameElement = document.getElementById("file-name");
+    const imgPreview = document.getElementById("image-preview");
+
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      fileNameElement.textContent = "Selected File: " + file.name;
+
+      // Set image preview
+      imgPreview.src = URL.createObjectURL(file);
+      imgPreview.style.display = "block";
+      imgPreview.classList.remove("hidden");
+
+      // Center and enlarge image
+      document.querySelector(".image-preview-container").style.transform =
+        "scale(1.1)";
+    }
+  }
+
+  function uploadImage() {
+    const fileInput = document.getElementById("imageInput");
+    if (fileInput.files.length === 0) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const formData = new FormData();
+    formData.append("image", file);
+
+    fetch("/freshness_test", {
+      method: "POST",
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        const resultElement = document.getElementById("result");
+        resultElement.classList.remove("hidden");
+
+        if (data.error) {
+          resultElement.innerText = "Error: " + data.error;
+          resultElement.className = "result-message";
+        } else {
+          const freshnessStatus =
+            data.freshness_label === 1 ? "Rotten" : "Fresh";
+          resultElement.innerText = "Freshness Status: " + freshnessStatus;
+          resultElement.className =
+            freshnessStatus === "Fresh"
+              ? "result-message fresh"
+              : "result-message rotten";
+        }
+      })
+      .catch((error) => {
+        document.getElementById("result").innerText = "Error: " + error;
+        document.getElementById("result").className = "result-message";
+      });
+  }
+</script>
+
+{% endblock %}
